@@ -185,12 +185,23 @@ export async function smeltItem(bot, itemName, num=1) {
     // check if the furnace is already smelting something
     let input_item = furnace.inputItem();
     if (input_item && input_item.type !== mc.getItemId(itemName) && input_item.count > 0) {
-        // TODO: check if furnace is currently burning fuel. furnace.fuel is always null, I think there is a bug.
-        // This only checks if the furnace has an input item, but it may not be smelting it and should be cleared.
-        log(bot, `The furnace is currently smelting ${mc.getItemName(input_item.type)}.`);
-        if (placedFurnace)
-            await collectBlock(bot, 'furnace', 1);
-        return false;
+        let is_lit = false;
+        const currentFurnaceBlock = bot.blockAt(furnaceBlock.position);
+        if (currentFurnaceBlock && currentFurnaceBlock.getProperties) {
+            is_lit = currentFurnaceBlock.getProperties().lit === true;
+        } else if (currentFurnaceBlock && currentFurnaceBlock._properties) {
+            is_lit = currentFurnaceBlock._properties.lit === true;
+        }
+
+        if (is_lit) {
+            log(bot, `The furnace is currently smelting ${mc.getItemName(input_item.type)}.`);
+            if (placedFurnace)
+                await collectBlock(bot, 'furnace', 1);
+            return false;
+        } else {
+            log(bot, `Clearing un-smelting item ${mc.getItemName(input_item.type)} from furnace.`);
+            await furnace.takeInput();
+        }
     }
     // check if the bot has enough items to smelt
     let inv_counts = world.getInventoryCounts(bot);
