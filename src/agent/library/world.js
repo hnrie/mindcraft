@@ -406,15 +406,34 @@ export async function isClearPath(bot, target) {
 export function shouldPlaceTorch(bot) {
     if (!bot.modes.isOn('torch_placing') || bot.interrupt_code) return false;
     const pos = getPosition(bot);
-    // TODO: check light level instead of nearby torches, block.light is broken
-    let nearest_torch = getNearestBlock(bot, 'torch', 6);
-    if (!nearest_torch)
-        nearest_torch = getNearestBlock(bot, 'wall_torch', 6);
-    if (!nearest_torch) {
-        const block = bot.blockAt(pos);
-        let has_torch = bot.inventory.findInventoryItem('torch');
-        return has_torch && block?.name === 'air';
+    const block = bot.blockAt(pos);
+
+    if (!block) return false;
+
+    let has_torch = bot.inventory.findInventoryItem('torch');
+    if (!has_torch || block.name !== 'air') return false;
+
+    let skyLight = block.skyLight || 0;
+    let blockLight = block.blockLight || 0;
+    let timeOfDay = bot.time.timeOfDay;
+    let effectiveSkyLight = skyLight;
+
+    if (timeOfDay > 13000 && timeOfDay < 23000) {
+        effectiveSkyLight = Math.min(skyLight, 4);
     }
+
+    let effectiveLight = Math.max(effectiveSkyLight, blockLight);
+
+    if (effectiveLight <= 7) {
+        let nearest_torch = getNearestBlock(bot, 'torch', 6);
+        if (!nearest_torch) {
+            nearest_torch = getNearestBlock(bot, 'wall_torch', 6);
+        }
+        if (!nearest_torch) {
+            return true;
+        }
+    }
+
     return false;
 }
 
