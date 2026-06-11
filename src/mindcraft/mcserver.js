@@ -20,7 +20,8 @@ export async function serverInfo(ip, port, timeout = 1000, verbose = false) {
 
         mc.ping({
             host: ip,
-            port
+            port,
+            hideErrors: true
         }, (err, response) => {
             clearTimeout(timeoutId);
 
@@ -77,11 +78,6 @@ export async function findServers(ip, earlyExit = false, timeout = 100) {
             });
         });
     };
-
-    // This supresses a lot of annoying console output from the mc library
-    // TODO: find a better way to do this, it supresses other useful output
-    const originalConsoleLog = console.log;
-    console.log = () => { };
     
     for (let port = startPort; port <= endPort; port++) {
         const openPort = await checkPort(port);
@@ -94,9 +90,6 @@ export async function findServers(ip, earlyExit = false, timeout = 100) {
             }
         }
     }
-
-    // Restore console output
-    console.log = originalConsoleLog;
 
     return servers;
 }
